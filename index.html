@@ -2,12 +2,14 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>AR 3D Demo</title>
+    <title>AR Astronaut with Joystick</title>
 
-    <!-- A-Frame library -->
+    <!-- A-Frame -->
     <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
-    <!-- AR.js for A-Frame -->
+    <!-- AR.js -->
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.3.2/aframe/build/aframe-ar.min.js"></script>
+    <!-- Joystick control -->
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.controls.min.js"></script>
 
     <style>
       body { margin: 0; overflow: hidden; }
@@ -18,19 +20,23 @@
         text-align: center;
         color: white;
         font-family: sans-serif;
+        z-index: 10;
       }
     </style>
   </head>
   <body>
     <div class="center">
-      <h2>🔍 Point your camera at the HIRO marker!</h2>
+      <h2>🧑‍🚀 Move the Astronaut with the Joystick!</h2>
     </div>
 
-    <!-- AR Scene -->
-    <a-scene embedded arjs>
+    <a-scene
+      vr-mode-ui="enabled: false"
+      embedded
+      arjs="sourceType: webcam; debugUIEnabled: false;">
+
+      <!-- Marker -->
       <a-marker preset="hiro">
-        <!-- 3D astronaut model -->
-        <a-entity
+        <a-entity id="astronaut"
           gltf-model="https://modelviewer.dev/shared-assets/models/Astronaut.glb"
           scale="0.5 0.5 0.5"
           rotation="0 180 0"
@@ -38,7 +44,48 @@
         </a-entity>
       </a-marker>
 
-      <a-entity camera></a-entity>
+      <!-- Camera -->
+      <a-entity camera look-controls wasd-controls-enabled="false" position="0 0 0"></a-entity>
     </a-scene>
+
+    <!-- Add joystick UI -->
+    <script>
+      // Create virtual joystick using nipplejs (lightweight joystick library)
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/nipplejs@0.9.0/dist/nipplejs.min.js";
+      document.head.appendChild(script);
+
+      script.onload = () => {
+        const manager = nipplejs.create({
+          zone: document.body,
+          mode: 'static',
+          position: { left: '50%', bottom: '100px' },
+          color: 'white'
+        });
+
+        const astronaut = document.querySelector('#astronaut');
+        let direction = { x: 0, z: 0 };
+
+        manager.on('move', (evt, data) => {
+          if (data.direction) {
+            const angle = data.angle.radian;
+            direction.x = Math.sin(angle) * 0.02;
+            direction.z = Math.cos(angle) * 0.02 * -1;
+          }
+        });
+
+        manager.on('end', () => {
+          direction = { x: 0, z: 0 };
+        });
+
+        function animate() {
+          const pos = astronaut.object3D.position;
+          pos.x += direction.x;
+          pos.z += direction.z;
+          requestAnimationFrame(animate);
+        }
+        animate();
+      };
+    </script>
   </body>
 </html>
